@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>赛博戒烟 · CYBER QUIT</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --cyan: #00f0ff;
+    --magenta: #ff2a6d;
+    --yellow: #f9f002;
+    --bg: #050510;
+    --panel: rgba(13, 17, 40, 0.85);
+  }
+  body {
+    min-height: 100vh;
+    background: var(--bg);
+    color: #d7f9ff;
+    font-family: "Courier New", ui-monospace, "PingFang SC", "Microsoft YaHei", sans-serif;
+    padding: 28px 16px 48px;
+    background-image:
+      linear-gradient(rgba(0,240,255,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,240,255,0.05) 1px, transparent 1px),
+      radial-gradient(ellipse at 50% -10%, rgba(255,42,109,0.25), transparent 60%),
+      radial-gradient(ellipse at 50% 115%, rgba(0,240,255,0.18), transparent 60%);
+    background-size: 44px 44px, 44px 44px, 100% 100%, 100% 100%;
+  }
+  body::after {
+    content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 50;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,0.16) 0 1px, transparent 1px 3px);
+    mix-blend-mode: overlay;
+  }
+  .wrap { max-width: 560px; margin: 0 auto; position: relative; z-index: 1; }
+
+  .sysline { text-align: center; color: var(--cyan); font-size: 12px; letter-spacing: 3px; opacity: .8; }
+  h1 {
+    text-align: center; font-size: 54px; font-weight: 900; letter-spacing: 6px; margin: 10px 0 2px;
+    color: #fff;
+    text-shadow: 0 0 6px var(--cyan), 0 0 22px var(--cyan), 3px 3px 0 var(--magenta), -2px -2px 0 rgba(0,240,255,.6);
+    animation: flicker 4s infinite;
+  }
+  @keyframes flicker { 0%,100% {opacity:1} 92% {opacity:1} 93% {opacity:.4} 94% {opacity:1} 97% {opacity:.6} 98% {opacity:1} }
+  .subtitle { text-align: center; color: var(--magenta); letter-spacing: 8px; font-size: 14px; text-shadow: 0 0 12px var(--magenta); }
+  .uninstalled {
+    text-align: center; margin: 16px auto 4px; font-size: 13px; color: #9beaff;
+    border: 1px dashed rgba(0,240,255,.5); display: table; padding: 6px 14px; background: rgba(0,240,255,.05);
+  }
+  .uninstalled b { color: var(--yellow); }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid rgba(0,240,255,.45);
+    box-shadow: 0 0 0 1px rgba(255,42,109,.15), 0 0 28px rgba(0,240,255,.12), inset 0 0 24px rgba(0,240,255,.05);
+    clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+    padding: 20px; margin-top: 20px;
+  }
+  .panel h2 { font-size: 13px; letter-spacing: 4px; color: var(--cyan); margin-bottom: 14px; }
+  .panel h2::before { content: "▸ "; color: var(--magenta); }
+
+  .timer { text-align: center; padding: 8px 0 2px; }
+  .timer .big {
+    font-size: 44px; font-weight: 700; color: #fff; letter-spacing: 2px;
+    text-shadow: 0 0 10px var(--cyan), 0 0 30px rgba(0,240,255,.7);
+    font-variant-numeric: tabular-nums;
+  }
+  .timer .labels { display: flex; justify-content: center; gap: 26px; color: #7fd8e8; font-size: 11px; letter-spacing: 4px; margin-top: 4px; }
+  .timer .hint { margin-top: 10px; font-size: 12px; color: #8fb7c4; }
+
+  .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .stat {
+    border: 1px solid rgba(255,42,109,.4); background: rgba(255,42,109,.05);
+    padding: 12px 8px; text-align: center;
+  }
+  .stat .num { font-size: 24px; font-weight: 700; color: var(--yellow); text-shadow: 0 0 10px rgba(249,240,2,.6); font-variant-numeric: tabular-nums; }
+  .stat .cap { font-size: 11px; color: #c9a7b8; letter-spacing: 2px; margin-top: 4px; }
+
+  .milestone { margin-bottom: 12px; }
+  .milestone .row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px; }
+  .milestone .name { color: #d7f9ff; }
+  .milestone .when { color: #7fd8e8; font-size: 12px; }
+  .bar { height: 8px; background: rgba(255,255,255,.08); border: 1px solid rgba(0,240,255,.25); overflow: hidden; }
+  .bar > div { height: 100%; width: 0%; background: linear-gradient(90deg, var(--cyan), var(--magenta)); box-shadow: 0 0 12px var(--cyan); transition: width .6s ease; }
+  .milestone.done .name { color: var(--yellow); }
+  .milestone.done .name::after { content: " ✓ 已解锁"; color: var(--yellow); font-size: 11px; }
+
+  label { display: block; font-size: 12px; letter-spacing: 2px; color: #7fd8e8; margin: 12px 0 6px; }
+  input {
+    width: 100%; background: rgba(0,0,0,.5); border: 1px solid rgba(0,240,255,.4); color: #fff;
+    padding: 10px 12px; font-size: 15px; font-family: inherit; outline: none;
+  }
+  input:focus { border-color: var(--magenta); box-shadow: 0 0 10px rgba(255,42,109,.5); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .btns { display: flex; gap: 12px; margin-top: 18px; }
+  button {
+    flex: 1; cursor: pointer; padding: 13px; font-size: 16px; font-weight: 700; letter-spacing: 4px;
+    font-family: inherit; border: none; transition: transform .06s ease, filter .15s ease;
+    clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  }
+  button:active { transform: scale(.97); }
+  .start { background: var(--magenta); color: #fff; text-shadow: 0 0 8px rgba(0,0,0,.4); box-shadow: 0 0 20px rgba(255,42,109,.5); }
+  .start:hover { filter: brightness(1.15); }
+  .reset { background: transparent; color: var(--cyan); border: 1px solid var(--cyan); }
+  .footer { text-align: center; margin-top: 22px; font-size: 12px; color: #5f8291; letter-spacing: 2px; }
+  .footer a { color: var(--cyan); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="sysline">// SYSTEM v2.077 — SMOKE-FREE PROTOCOL //</div>
+  <h1>赛博戒烟</h1>
+  <div class="subtitle">CYBER QUIT</div>
+  <div class="uninstalled">系统提示：<b>尼古丁.exe</b> 已卸载 · 进程终止 ✓</div>
+
+  <div class="panel">
+    <h2>戒烟计时器</h2>
+    <div class="timer">
+      <div class="big" id="timer">00 : 00 : 00 : 00</div>
+      <div class="labels"><span>天 DAYS</span><span>时 HRS</span><span>分 MIN</span><span>秒 SEC</span></div>
+      <div class="hint" id="startHint">设置下面的开始时间，点「启动协议」开始计时</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>战绩统计</h2>
+    <div class="stats">
+      <div class="stat"><div class="num" id="cigsAvoided">0</div><div class="cap">少抽的烟（根）</div></div>
+      <div class="stat"><div class="num" id="moneySaved">¥0</div><div class="cap">省下的钱</div></div>
+      <div class="stat"><div class="num" id="lifeGained">0分钟</div><div class="cap">夺回的生命</div></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>身体修复进度</h2>
+    <div id="milestones"></div>
+  </div>
+
+  <div class="panel">
+    <h2>参数设置</h2>
+    <label>开始戒烟的时间</label>
+    <input type="datetime-local" id="startTime">
+    <div class="grid2">
+      <div>
+        <label>以前每天抽几根</label>
+        <input type="number" id="perDay" min="1" max="200" value="20">
+      </div>
+      <div>
+        <label>每包价格（元 / 20根）</label>
+        <input type="number" id="price" min="1" max="1000" value="25">
+      </div>
+    </div>
+    <div class="btns">
+      <button class="start" id="startBtn">启动协议</button>
+      <button class="reset" id="resetBtn">重置系统</button>
+    </div>
+  </div>
+
+  <div class="footer">撑不住的时候回来看看这块屏幕 · <a href="https://cinhflaswes58.github.io/">← 去用计算器</a></div>
+</div>
+
+<script>
+  const MILESTONES = [
+    { mins: 20,        when: '20分钟', name: '血压和心率恢复正常' },
+    { mins: 12 * 60,   when: '12小时', name: '血液一氧化碳降至正常水平' },
+    { mins: 48 * 60,   when: '2天',    name: '味觉和嗅觉开始恢复' },
+    { mins: 14 * 1440, when: '2周',    name: '血液循环改善，走路更轻松' },
+    { mins: 30 * 1440, when: '1个月',  name: '咳嗽减少，肺部纤毛重新工作' },
+    { mins: 365 * 1440, when: '1年',   name: '冠心病风险降到吸烟者的一半' },
+  ];
+  const LIFE_PER_CIG = 11; // 每根烟约少活11分钟（常用估算）
+
+  const $ = id => document.getElementById(id);
+  const milestonesEl = $('milestones');
+  MILESTONES.forEach((m, i) => {
+    const div = document.createElement('div');
+    div.className = 'milestone'; div.id = 'ms' + i;
+    div.innerHTML = `<div class="row"><span class="name">${m.name}</span><span class="when">${m.when}</span></div><div class="bar"><div></div></div>`;
+    milestonesEl.appendChild(div);
+  });
+
+  function loadSettings() {
+    try { return JSON.parse(localStorage.getItem('cyberQuit') || 'null'); } catch { return null; }
+  }
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  function tick() {
+    const s = loadSettings();
+    if (!s || !s.start) {
+      $('timer').textContent = '00 : 00 : 00 : 00';
+      return;
+    }
+    const elapsedMs = Math.max(0, Date.now() - s.start);
+    const elapsedMin = elapsedMs / 60000;
+    const totalSec = Math.floor(elapsedMs / 1000);
+    const d = Math.floor(totalSec / 86400);
+    const h = Math.floor(totalSec % 86400 / 3600);
+    const m = Math.floor(totalSec % 3600 / 60);
+    const sec = totalSec % 60;
+    $('timer').textContent = `${pad(d)} : ${pad(h)} : ${pad(m)} : ${pad(sec)}`;
+    $('startHint').textContent = '协议运行中 · 开始于 ' + new Date(s.start).toLocaleString('zh-CN');
+
+    const cigs = elapsedMin / 1440 * s.perDay;
+    $('cigsAvoided').textContent = Math.floor(cigs).toLocaleString();
+    const money = cigs / 20 * s.price;
+    $('moneySaved').textContent = '¥' + money.toFixed(2);
+    const lifeMin = Math.floor(cigs * LIFE_PER_CIG);
+    $('lifeGained').textContent = lifeMin >= 1440
+      ? (lifeMin / 1440).toFixed(1) + '天'
+      : lifeMin >= 60 ? (lifeMin / 60).toFixed(1) + '小时' : lifeMin + '分钟';
+
+    MILESTONES.forEach((mm, i) => {
+      const pct = Math.min(100, elapsedMin / mm.mins * 100);
+      const el = document.getElementById('ms' + i);
+      el.querySelector('.bar > div').style.width = pct + '%';
+      el.classList.toggle('done', pct >= 100);
+    });
+  }
+
+  // init form from saved settings
+  const saved = loadSettings();
+  if (saved) {
+    $('perDay').value = saved.perDay;
+    $('price').value = saved.price;
+    const dt = new Date(saved.start);
+    $('startTime').value = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  } else {
+    const now = new Date();
+    $('startTime').value = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  }
+
+  $('startBtn').addEventListener('click', () => {
+    const t = $('startTime').value ? new Date($('startTime').value).getTime() : Date.now();
+    const perDay = Math.max(1, parseInt($('perDay').value) || 20);
+    const price = Math.max(1, parseFloat($('price').value) || 25);
+    localStorage.setItem('cyberQuit', JSON.stringify({ start: t, perDay, price }));
+    tick();
+  });
+  $('resetBtn').addEventListener('click', () => {
+    localStorage.removeItem('cyberQuit');
+    $('cigsAvoided').textContent = '0';
+    $('moneySaved').textContent = '¥0';
+    $('lifeGained').textContent = '0分钟';
+    $('startHint').textContent = '设置下面的开始时间，点「启动协议」开始计时';
+    MILESTONES.forEach((mm, i) => {
+      const el = document.getElementById('ms' + i);
+      el.querySelector('.bar > div').style.width = '0%';
+      el.classList.remove('done');
+    });
+    tick();
+  });
+
+  tick();
+  setInterval(tick, 1000);
+</script>
+</body>
+</html>
